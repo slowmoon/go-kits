@@ -89,12 +89,26 @@ func (s *ServiceReg)ListenLeaseResponse()  {
     }
 }
 
-func (s *ServiceReg)PutService(key , val string) error {
+func (s *ServiceReg)Register(key , val string) error {
     kv := clientv3.NewKV(s.client)
     ctx , cancel := context.WithTimeout(context.Background(), 5 *time.Second)
     defer cancel()
     _, err := kv.Put(ctx, key, val, clientv3.WithLease(s.leaseResponse.ID))
     return err
+}
+
+func (s *ServiceReg)DeRegister(key string) error {
+    kv := clientv3.NewKV(s.client)
+    ctx, cancel := context.WithCancel(context.Background())
+    defer cancel()
+    _, err := kv.Delete(ctx, key, clientv3.WithLease(s.leaseResponse.ID))
+    return  err
+}
+
+func (s *ServiceReg)Close() error {
+    s.RevokeRelease()
+    s.client.Close()
+    return nil
 }
 
 func (s *ServiceReg)RevokeRelease() error {
